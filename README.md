@@ -4,6 +4,10 @@
 ## System Diagram
 ![diagram](https://raw.githubusercontent.com/estshorter/m5paper-dashboard/images/diagram.png)
 
-
 ## How to use
-Set your wifi parameters in `src/WiFiInfo.h`
+Set your Wi-Fi parameters in `src/WiFiInfo.h`
+
+## Buttons
+- BtnL: Shutdown (long press)
+- BtnR: Refresh e-paper
+- BtnP: Time Synchronization with a NTP server
