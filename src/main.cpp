@@ -208,7 +208,7 @@ void handleButton(void *pvParameters)
 
 void setup(void)
 {
-  M5.begin(false, false, true, false);
+  M5.begin(false, false, true, true);
   WiFi.begin(WiFiInfo::SSID, WiFiInfo::PASS);
 
   gfx.init();
@@ -319,7 +319,19 @@ void loop(void)
     WiFiStatus = String("NG");
   }
   gfx.print("WiFi: ");
-  gfx.print(WiFiStatus);
+  gfx.println(WiFiStatus);
+
+  auto vol = M5.getBatteryVoltage();
+  if (vol < 3300)
+  {
+    vol = 3300;
+  }
+  else if (vol > 4350)
+  {
+    vol = 4350;
+  }
+  gfx.printf("BAT : %04dmv", vol);
+
   gfx.clearClipRect();
   gfx.setTextSize(FONT_SIZE_LARGE);
   gfx.endWrite();
