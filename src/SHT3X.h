@@ -58,7 +58,7 @@ namespace SHT3X
    * Final XOR 0x00
    */
 
-      const uint8_t POLYNOMIAL(0x31);
+      constexpr uint8_t POLYNOMIAL(0x31);
       uint8_t crc(0xFF);
 
       for (int j = len; j; --j)
