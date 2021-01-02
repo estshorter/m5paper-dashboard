@@ -10,16 +10,16 @@
 #include <LovyanGFX.hpp>
 #include "myFont.h"
 
-constexpr uint32_t SLEEP_SEC = 10;
-constexpr uint32_t TIME_SYNC_CYCLE = 7 * 3600 * 24 / SLEEP_SEC;
+constexpr uint_fast16_t SLEEP_SEC = 10;
+constexpr uint_fast32_t TIME_SYNC_CYCLE = 7 * 3600 * 24 / SLEEP_SEC;
 constexpr auto NTP_SERVER = "ntp.nict.jp";
 constexpr auto TIME_ZONE = "JST-9";
-constexpr uint16_t WIFI_CONNECT_RETRY_MAX = 20;
+constexpr uint_fast16_t WIFI_CONNECT_RETRY_MAX = 20;
 constexpr float FONT_SIZE_LARGE = 3.0;
 constexpr float FONT_SIZE_SMALL = 1.0;
-constexpr uint32_t WAIT_ON_NOTIFY = 2000;
-constexpr uint16_t M5PAPER_SIZE_LONG_SIDE = 960;
-constexpr uint16_t M5PAPER_SIZE_SHORT_SIDE = 540;
+constexpr uint_fast16_t WAIT_ON_NOTIFY = 2000;
+constexpr uint_fast16_t M5PAPER_SIZE_LONG_SIDE = 960;
+constexpr uint_fast16_t M5PAPER_SIZE_SHORT_SIDE = 540;
 
 TwoWire *wire_portA = &Wire1;
 SemaphoreHandle_t xMutex = nullptr;
@@ -219,7 +219,7 @@ void setup(void)
   gfx.setTextSize(FONT_SIZE_SMALL);
 
   gfx.print("Connecting to Wi-Fi network");
-  for (uint16_t cnt_retry = 0;
+  for (int cnt_retry = 0;
        cnt_retry < WIFI_CONNECT_RETRY_MAX || !WiFi.isConnected();
        cnt_retry++)
   {
@@ -266,7 +266,7 @@ void loop(void)
 {
   xSemaphoreTake(xMutex, portMAX_DELAY);
   float tmp = 0.0;
-  uint8_t hum = 0;
+  uint_fast8_t hum = 0;
 
   if (sht30.read() == 0)
   {
@@ -286,8 +286,8 @@ void loop(void)
   gfx.fillScreen(TFT_WHITE);
   gfx.fillRect(0.57 * M5PAPER_SIZE_LONG_SIDE, 0, 3, M5PAPER_SIZE_SHORT_SIDE, TFT_BLACK);
 
-  constexpr uint16_t offset_y = 30;
-  constexpr uint16_t offset_x = 45;
+  constexpr uint_fast16_t offset_y = 30;
+  constexpr uint_fast16_t offset_x = 45;
 
   gfx.setCursor(0, offset_y);
   gfx.setClipRect(offset_x, offset_y, M5PAPER_SIZE_LONG_SIDE - offset_x, M5PAPER_SIZE_SHORT_SIDE - offset_y);

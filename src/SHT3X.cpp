@@ -38,7 +38,7 @@ namespace SHT3X
     // simplified (65536 instead of 65535) integer version of:
     // humidity = (shum * 100.0f) / 65535.0f;
     sHum = (625 * sHum) >> 12;
-    _humidity = static_cast<uint8_t>((sHum / 100));
+    _humidity = static_cast<uint_fast8_t>((sHum / 100));
 
     return 0;
   }

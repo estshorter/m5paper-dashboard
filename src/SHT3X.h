@@ -35,7 +35,7 @@ namespace SHT3X
     uint8_t _address;
     TwoWire *_wire;
     float _cTemp = 0;
-    uint8_t _humidity = 0;
+    uint_fast8_t _humidity = 0;
 
     /**
  * Performs a CRC8 calculation on the supplied values.
