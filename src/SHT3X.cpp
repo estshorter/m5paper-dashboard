@@ -32,7 +32,7 @@ namespace SHT3X
     // simplified (65536 instead of 65535) integer version of:
     // temp = (sTemp * 175.0f) / 65535.0f - 45.0f;
     sTemp = ((4375 * sTemp) >> 14) - 4500;
-    _cTemp = (float)sTemp / 100.0f;
+    _cTemp = static_cast<float>(sTemp) / 100.0f;
 
     uint32_t sHum = (static_cast<uint32_t>(data[3]) << 8) | data[4];
     // simplified (65536 instead of 65535) integer version of:
