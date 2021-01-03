@@ -84,7 +84,7 @@ int SyncNTPTime(const char *ntpServer, const char *tz)
   return 0;
 }
 
-uint16_t getCo2Data(void)
+uint_fast16_t getCo2Data(void)
 {
   if (!WiFi.isConnected())
     return 0;
