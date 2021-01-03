@@ -15,18 +15,20 @@ constexpr uint_fast32_t TIME_SYNC_CYCLE = 7 * 3600 * 24 / SLEEP_SEC;
 constexpr auto NTP_SERVER = "ntp.nict.jp";
 constexpr auto TIME_ZONE = "JST-9";
 constexpr auto CO2_DATA_URL = "http://192.168.10.105/api/data";
-constexpr uint_fast16_t WIFI_CONNECT_RETRY_MAX = 20;
+constexpr uint_fast16_t WIFI_CONNECT_RETRY_MAX = 60; // 10 = 5s
 constexpr float FONT_SIZE_LARGE = 3.0;
 constexpr float FONT_SIZE_SMALL = 1.0;
 constexpr uint_fast16_t WAIT_ON_NOTIFY = 2000;
 constexpr uint_fast16_t M5PAPER_SIZE_LONG_SIDE = 960;
 constexpr uint_fast16_t M5PAPER_SIZE_SHORT_SIDE = 540;
 
+rtc_time_t time_ntp;
+rtc_date_t date_ntp{4, 1, 1, 1970};
+
 TwoWire *wire_portA = &Wire1;
 SemaphoreHandle_t xMutex = nullptr;
 SHT3X::SHT3X sht30(wire_portA);
 LGFX gfx;
-uint32_t cnt = 0;
 
 String WiFiConnectedToString()
 {
@@ -62,7 +64,7 @@ String weekdayToString(const int8_t weekDay)
   return String("");
 }
 
-int SyncNTPTime(const char *ntpServer, const char *tz)
+int syncNTPTime(const char *ntpServer, const char *tz)
 {
   if (!WiFi.isConnected())
   {
@@ -71,22 +73,24 @@ int SyncNTPTime(const char *ntpServer, const char *tz)
 
   configTzTime(tz, ntpServer);
 
-  struct tm timeInfo;
-  if (!getLocalTime(&timeInfo))
+  struct tm datetime;
+  if (!getLocalTime(&datetime))
     return 1;
 
-  rtc_time_t time_struct{
-      static_cast<int8_t>(timeInfo.tm_hour),
-      static_cast<int8_t>(timeInfo.tm_min),
-      static_cast<int8_t>(timeInfo.tm_sec)};
-  rtc_date_t date_struct{
-      static_cast<int8_t>(timeInfo.tm_wday),
-      static_cast<int8_t>(timeInfo.tm_mon + 1),
-      static_cast<int8_t>(timeInfo.tm_mday),
-      static_cast<int16_t>(timeInfo.tm_year + 1900)};
+  rtc_time_t time{
+      static_cast<int8_t>(datetime.tm_hour),
+      static_cast<int8_t>(datetime.tm_min),
+      static_cast<int8_t>(datetime.tm_sec)};
+  rtc_date_t date{
+      static_cast<int8_t>(datetime.tm_wday),
+      static_cast<int8_t>(datetime.tm_mon + 1),
+      static_cast<int8_t>(datetime.tm_mday),
+      static_cast<int16_t>(datetime.tm_year + 1900)};
 
-  M5.RTC.setTime(&time_struct);
-  M5.RTC.setDate(&date_struct);
+  M5.RTC.setTime(&time);
+  M5.RTC.setDate(&date);
+  date_ntp = date;
+  time_ntp = time;
   return 0;
 }
 
@@ -140,7 +144,7 @@ void handleBtnPPress(void)
 
   gfx.startWrite();
   gfx.setCursor(0, 0);
-  if (!SyncNTPTime(NTP_SERVER, TIME_ZONE))
+  if (!syncNTPTime(NTP_SERVER, TIME_ZONE))
   {
     gfx.println("Succeeded to sync time");
     struct tm timeInfo;
@@ -232,14 +236,19 @@ void setup(void)
 
   gfx.print("Connecting to Wi-Fi network");
   for (int cnt_retry = 0;
-       cnt_retry < WIFI_CONNECT_RETRY_MAX || !WiFi.isConnected();
+       cnt_retry < WIFI_CONNECT_RETRY_MAX && !WiFi.isConnected();
        cnt_retry++)
   {
     delay(500);
     gfx.print(".");
   }
   gfx.println("");
-  if (!WiFi.isConnected())
+  if (WiFi.isConnected())
+  {
+    gfx.print("Local IP: ");
+    gfx.println(WiFi.localIP());
+  }
+  else
   {
     gfx.println("Failed to connect to a Wi-Fi network");
     delay(WAIT_ON_NOTIFY);
@@ -269,6 +278,7 @@ void setup(void)
     gfx.println("Failed to create a task for buttons");
   }
   gfx.println("Init done");
+  delay(1000);
   gfx.setTextSize(FONT_SIZE_LARGE);
   prettyEpdRefresh();
   gfx.setCursor(0, 0);
@@ -276,6 +286,8 @@ void setup(void)
 
 void loop(void)
 {
+  static uint32_t cnt = 0;
+
   xSemaphoreTake(xMutex, portMAX_DELAY);
   float tmp = 0.0;
   uint_fast8_t hum = 0;
@@ -316,10 +328,10 @@ void loop(void)
   gfx.println(weekdayToString(date.week));
   gfx.clearClipRect();
 
-  constexpr float offset_y_info = 0.8 * M5PAPER_SIZE_SHORT_SIDE;
+  constexpr float offset_y_info = 0.75 * M5PAPER_SIZE_SHORT_SIDE;
   gfx.setCursor(0, offset_y_info);
   gfx.setTextSize(FONT_SIZE_SMALL);
-  gfx.setClipRect(x, offset_y_info, M5PAPER_SIZE_LONG_SIDE - offset_x - x, gfx.height() - offset_y_info);
+  gfx.setClipRect(x, offset_y_info, M5PAPER_SIZE_LONG_SIDE - x, gfx.height() - offset_y_info);
   gfx.print("WiFi: ");
   gfx.println(WiFiConnectedToString());
 
@@ -327,7 +339,18 @@ void loop(void)
   constexpr uint32_t high = 4350;
 
   auto vol = std::min(std::max(M5.getBatteryVoltage(), low), high);
-  gfx.printf("BAT : %04dmv", vol);
+  gfx.printf("BAT : %04dmv\r\n", vol);
+  gfx.print("NTP : ");
+  if (date_ntp.year == 1970)
+  {
+    gfx.print("YET"); // not initialized
+  }
+  else
+  {
+    gfx.printf("%02d/%02d %02d:%02d",
+               date_ntp.mon, date_ntp.day,
+               time_ntp.hour, time_ntp.min);
+  }
 
   gfx.clearClipRect();
   gfx.setTextSize(FONT_SIZE_LARGE);
@@ -336,7 +359,7 @@ void loop(void)
   cnt++;
   if (cnt == TIME_SYNC_CYCLE)
   {
-    SyncNTPTime(NTP_SERVER, TIME_ZONE);
+    syncNTPTime(NTP_SERVER, TIME_ZONE);
     cnt = 0;
   }
   xSemaphoreGive(xMutex);
