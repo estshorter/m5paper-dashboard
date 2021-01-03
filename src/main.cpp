@@ -14,6 +14,7 @@ constexpr uint_fast16_t SLEEP_SEC = 10;
 constexpr uint_fast32_t TIME_SYNC_CYCLE = 7 * 3600 * 24 / SLEEP_SEC;
 constexpr auto NTP_SERVER = "ntp.nict.jp";
 constexpr auto TIME_ZONE = "JST-9";
+constexpr auto CO2_DATA_URL = "http://192.168.10.105/api/data";
 constexpr uint_fast16_t WIFI_CONNECT_RETRY_MAX = 20;
 constexpr float FONT_SIZE_LARGE = 3.0;
 constexpr float FONT_SIZE_SMALL = 1.0;
@@ -86,13 +87,15 @@ int SyncNTPTime(const char *ntpServer, const char *tz)
 
 uint_fast16_t getCo2Data(void)
 {
+  using namespace ArduinoJson;
   if (!WiFi.isConnected())
     return 0;
 
+  WiFiClient client;
   HTTPClient http;
-  if (!http.begin("http://192.168.10.105/api/data"))
+  if (!http.begin(client, CO2_DATA_URL))
   {
-    Serial.printf("[HTTP] Unable to connect\n");
+    Serial.printf("[HTTP] Failed to parse url\n");
     return 0;
   }
 
@@ -101,23 +104,27 @@ uint_fast16_t getCo2Data(void)
   // httpCode will be negative on error
   if (httpCode != HTTP_CODE_OK)
   {
-    Serial.printf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
+    Serial.printf("[HTTP] GET... failed, error: %s\n",
+                  http.errorToString(httpCode).c_str());
     http.end();
     return 0;
   }
-  ArduinoJson::DynamicJsonDocument doc(1024);
-  String payload = http.getString();
+  // String payload = http.getString();
 
-  ArduinoJson::StaticJsonDocument<64> filter;
+  StaticJsonDocument<64> filter;
   filter["co2"]["value"] = true;
 
-  deserializeJson(doc, payload,
-                  ArduinoJson::DeserializationOption::Filter(filter));
-
+  StaticJsonDocument<64> doc;
+  auto err = deserializeJson(doc, client, DeserializationOption::Filter(filter));
   http.end();
+  if (err)
+  {
+    Serial.printf("[JSON] DeserializationError, error: %s\n", err.c_str());
+    return 0;
+  }
 
-  int co2 = doc["co2"]["value"];
-  return static_cast<uint16_t>(co2);
+  uint_fast16_t co2 = doc["co2"]["value"];
+  return co2;
 }
 
 void handleBtnPPress(void)
@@ -180,7 +187,7 @@ void handleBtnLLongPress(void)
   M5.disableEXTPower();
   M5.disableMainPower();
   esp_deep_sleep_start();
-  while (1)
+  while (true)
     ;
   xSemaphoreGive(xMutex);
 }
@@ -278,7 +285,6 @@ void loop(void)
   rtc_date_t date;
   rtc_time_t time;
 
-  // Get RTC
   M5.RTC.getDate(&date);
   M5.RTC.getTime(&time);
 
