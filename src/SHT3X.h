@@ -26,7 +26,7 @@ namespace SHT3X
       return _cTemp;
     }
 
-    uint8_t getHumidity(void) const
+    uint_fast8_t getHumidity(void) const
     {
       return _humidity;
     }
