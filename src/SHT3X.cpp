@@ -5,12 +5,12 @@ namespace SHT3X
   int SHT3X::read()
   {
     uint8_t data[6];
+    constexpr uint8_t COMMAND_MEASURE[2] = {0x2C, 0x06};
 
     // Start I2C Transmission
     _wire->beginTransmission(_address);
     // Send measurement command
-    _wire->write(0x2C);
-    _wire->write(0x06);
+    _wire->write(COMMAND_MEASURE, 2);
     // Stop I2C transmission
     if (_wire->endTransmission() != 0)
       return 1;

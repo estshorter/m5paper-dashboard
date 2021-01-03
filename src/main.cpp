@@ -191,7 +191,6 @@ void handleBtnLLongPress(void)
   gfx.setTextSize(FONT_SIZE_SMALL);
   gfx.print("Good bye..");
   gfx.waitDisplay();
-  M5.shutdown();
   M5.disableEPDPower();
   M5.disableEXTPower();
   M5.disableMainPower();
