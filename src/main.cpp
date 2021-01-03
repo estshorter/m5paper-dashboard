@@ -10,9 +10,11 @@
 #include <LovyanGFX.hpp>
 #include "myFont.h"
 
-constexpr uint_fast16_t SLEEP_SEC = 10;
+constexpr uint_fast16_t SLEEP_SEC = 5;
 constexpr uint_fast32_t TIME_SYNC_CYCLE = 7 * 3600 * 24 / SLEEP_SEC;
-constexpr auto NTP_SERVER = "ntp.nict.jp";
+constexpr auto NTP_SERVER1 = "ntp.nict.jp";
+constexpr auto NTP_SERVER2 = "time.cloudflare.com";
+constexpr auto NTP_SERVER3 = "time.google.com";
 constexpr auto TIME_ZONE = "JST-9";
 constexpr auto CO2_DATA_URL = "http://192.168.10.105/api/data";
 constexpr uint_fast16_t WIFI_CONNECT_RETRY_MAX = 60; // 10 = 5s
@@ -64,14 +66,33 @@ String weekdayToString(const int8_t weekDay)
   return String("");
 }
 
-int syncNTPTime(const char *ntpServer, const char *tz)
+template <class...>
+struct conjunction : std::true_type
 {
+};
+template <class B1_>
+struct conjunction<B1_> : B1_
+{
+};
+template <class B1_, class... Bn>
+struct conjunction<B1_, Bn...>
+    : std::conditional<bool(B1_::value), conjunction<Bn...>, B1_>::type
+{
+};
+
+template <typename... Ts>
+using AreAllPtrToConstChar = typename conjunction<std::is_same<Ts, std::add_pointer<const char>::type>...>::type;
+
+template <class... NtpServers, typename std::enable_if<AreAllPtrToConstChar<NtpServers...>::value, std::nullptr_t>::type = nullptr>
+int syncNTPTime(const char *tz, NtpServers... ntps)
+{
+  static_assert(sizeof...(ntps) <= 3 && sizeof...(ntps) >= 1, "NTP servers must be one at least and three at most");
   if (!WiFi.isConnected())
   {
     return 1;
   }
 
-  configTzTime(tz, ntpServer);
+  configTzTime(tz, std::forward<NtpServers>(ntps)...);
 
   struct tm datetime;
   if (!getLocalTime(&datetime))
@@ -144,7 +165,7 @@ void handleBtnPPress(void)
 
   gfx.startWrite();
   gfx.setCursor(0, 0);
-  if (!syncNTPTime(NTP_SERVER, TIME_ZONE))
+  if (!syncNTPTime(TIME_ZONE, NTP_SERVER1, NTP_SERVER2, NTP_SERVER3))
   {
     gfx.println("Succeeded to sync time");
     struct tm timeInfo;
@@ -358,7 +379,7 @@ void loop(void)
   cnt++;
   if (cnt == TIME_SYNC_CYCLE)
   {
-    syncNTPTime(NTP_SERVER, TIME_ZONE);
+    syncNTPTime(TIME_ZONE, NTP_SERVER1, NTP_SERVER2, NTP_SERVER3);
     cnt = 0;
   }
   xSemaphoreGive(xMutex);
