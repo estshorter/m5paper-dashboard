@@ -28,6 +28,11 @@ SHT3X::SHT3X sht30(wire_portA);
 LGFX gfx;
 uint32_t cnt = 0;
 
+String WiFiConnectedToString()
+{
+  return WiFi.isConnected() ? String("OK") : String("NG");
+}
+
 void prettyEpdRefresh(void)
 {
   gfx.setEpdMode(epd_mode_t::epd_quality);
@@ -315,27 +320,13 @@ void loop(void)
   gfx.setCursor(0, offset_y_info);
   gfx.setTextSize(FONT_SIZE_SMALL);
   gfx.setClipRect(x, offset_y_info, M5PAPER_SIZE_LONG_SIDE - offset_x - x, gfx.height() - offset_y_info);
-  String WiFiStatus;
-  if (WiFi.isConnected())
-  {
-    WiFiStatus = String("OK");
-  }
-  else
-  {
-    WiFiStatus = String("NG");
-  }
   gfx.print("WiFi: ");
-  gfx.println(WiFiStatus);
+  gfx.println(WiFiConnectedToString());
 
-  auto vol = M5.getBatteryVoltage();
-  if (vol < 3300)
-  {
-    vol = 3300;
-  }
-  else if (vol > 4350)
-  {
-    vol = 4350;
-  }
+  constexpr uint32_t low = 3300;
+  constexpr uint32_t high = 4350;
+
+  auto vol = std::min(std::max(M5.getBatteryVoltage(), low), high);
   gfx.printf("BAT : %04dmv", vol);
 
   gfx.clearClipRect();
