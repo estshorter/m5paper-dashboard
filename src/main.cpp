@@ -140,7 +140,7 @@ void handleBtnPPress(void)
 
   gfx.startWrite();
   gfx.setCursor(0, 0);
-  if (SyncNTPTime(NTP_SERVER, TIME_ZONE) == 0)
+  if (!SyncNTPTime(NTP_SERVER, TIME_ZONE))
   {
     gfx.println("Succeeded to sync time");
     struct tm timeInfo;
@@ -280,7 +280,7 @@ void loop(void)
   float tmp = 0.0;
   uint_fast8_t hum = 0;
 
-  if (sht30.read() == 0)
+  if (!sht30.read())
   {
     tmp = sht30.getTemperature();
     hum = sht30.getHumidity();
