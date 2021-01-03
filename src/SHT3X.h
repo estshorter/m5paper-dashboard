@@ -15,7 +15,7 @@ namespace SHT3X
       _address = address;
     };
 
-    byte read(void);
+    int read(void);
     void begin(void)
     {
       _wire->begin();

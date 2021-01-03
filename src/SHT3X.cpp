@@ -2,7 +2,7 @@
 
 namespace SHT3X
 {
-  byte SHT3X::read()
+  int SHT3X::read()
   {
     uint8_t data[6];
 
