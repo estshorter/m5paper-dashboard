@@ -161,22 +161,26 @@ uint_fast16_t getCo2Data(void)
 
 void setLEDColor(uint_fast16_t co2)
 {
-  constexpr uint_fast8_t NUM_LED_USE = 1;
+  constexpr uint_fast8_t ID_LED_USE = 1;
   if (co2 < 650)
   {
-    leds[NUM_LED_USE] = CRGB::White;
+    leds[ID_LED_USE] = CRGB::White;
   }
   else if (co2 < 1200)
   {
-    leds[NUM_LED_USE] = CRGB::Green;
+    leds[ID_LED_USE] = CRGB::Green;
   }
   else if (co2 < 1500)
   {
-    leds[NUM_LED_USE] = CRGB::Yellow;
+    leds[ID_LED_USE] = CRGB::Yellow;
+  }
+  else if (co2 < 2000)
+  {
+    leds[ID_LED_USE] = CRGB::Red;
   }
   else
   {
-    leds[NUM_LED_USE] = CRGB::Red;
+    leds[ID_LED_USE] = CRGB::Orange;
   }
   FastLED.show();
 }
