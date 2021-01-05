@@ -3,6 +3,7 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.hpp>
+#include <FastLED.h>
 #include "SHT3X.h"
 #include "WiFiInfo.h"
 
@@ -22,6 +23,7 @@ TwoWire *wire_portA = &Wire1;
 SemaphoreHandle_t xMutex = nullptr;
 SHT3X::SHT3X sht30(wire_portA);
 LGFX gfx;
+CRGB leds[3];
 
 inline String WiFiConnectedToString()
 {
@@ -157,6 +159,28 @@ uint_fast16_t getCo2Data(void)
   return doc["co2"]["value"];
 }
 
+void setLEDColor(uint_fast16_t co2)
+{
+  constexpr uint_fast8_t NUM_LED_USE = 1;
+  if (co2 < 650)
+  {
+    leds[NUM_LED_USE] = CRGB::White;
+  }
+  else if (co2 < 1200)
+  {
+    leds[NUM_LED_USE] = CRGB::Green;
+  }
+  else if (co2 < 1500)
+  {
+    leds[NUM_LED_USE] = CRGB::Yellow;
+  }
+  else
+  {
+    leds[NUM_LED_USE] = CRGB::Red;
+  }
+  FastLED.show();
+}
+
 void handleBtnPPress(void)
 {
   xSemaphoreTake(xMutex, portMAX_DELAY);
@@ -250,6 +274,9 @@ void setup(void)
   M5.begin(false, false, true, true);
   WiFi.begin(WiFiInfo::SSID, WiFiInfo::PASS);
 
+  FastLED.addLeds<WS2811, 26, GRB>(leds, 3).setCorrection(TypicalSMD5050);
+  FastLED.setBrightness(3);
+
   gfx.init();
   gfx.setEpdMode(epd_mode_t::epd_fast);
   gfx.setRotation(1);
@@ -323,6 +350,7 @@ void loop(void)
     hum = sht30.getHumidity();
   }
   auto co2 = getCo2Data();
+  setLEDColor(co2);
 
   rtc_date_t date;
   rtc_time_t time;
