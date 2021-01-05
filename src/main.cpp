@@ -275,7 +275,7 @@ void setup(void)
   WiFi.begin(WiFiInfo::SSID, WiFiInfo::PASS);
 
   FastLED.addLeds<WS2811, 26, GRB>(leds, 3).setCorrection(TypicalSMD5050);
-  FastLED.setBrightness(3);
+  FastLED.setBrightness(32);
 
   gfx.init();
   gfx.setEpdMode(epd_mode_t::epd_fast);
