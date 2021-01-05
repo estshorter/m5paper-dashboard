@@ -4,23 +4,14 @@
 #include <HTTPClient.h>
 #include <ArduinoJson.hpp>
 #include "SHT3X.h"
-#include "wifiinfo.h"
+#include "WiFiInfo.h"
 
 #define LGFX_M5PAPER
 #include <LovyanGFX.hpp>
 #include "myFont.h"
 
-constexpr uint_fast16_t SLEEP_SEC = 5;
-constexpr uint_fast32_t TIME_SYNC_CYCLE = 7 * 3600 * 24 / SLEEP_SEC;
-constexpr auto NTP_SERVER1 = "ntp.nict.jp";
-constexpr auto NTP_SERVER2 = "time.cloudflare.com";
-constexpr auto NTP_SERVER3 = "time.google.com";
-constexpr auto TIME_ZONE = "JST-9";
-constexpr auto CO2_DATA_URL = "http://192.168.10.105/api/data";
-constexpr uint_fast16_t WIFI_CONNECT_RETRY_MAX = 60; // 10 = 5s
 constexpr float FONT_SIZE_LARGE = 3.0;
 constexpr float FONT_SIZE_SMALL = 1.0;
-constexpr uint_fast16_t WAIT_ON_NOTIFY = 2000;
 constexpr uint_fast16_t M5PAPER_SIZE_LONG_SIDE = 960;
 constexpr uint_fast16_t M5PAPER_SIZE_SHORT_SIDE = 540;
 
@@ -32,12 +23,12 @@ SemaphoreHandle_t xMutex = nullptr;
 SHT3X::SHT3X sht30(wire_portA);
 LGFX gfx;
 
-String WiFiConnectedToString()
+inline String WiFiConnectedToString()
 {
   return WiFi.isConnected() ? String("OK") : String("NG");
 }
 
-void prettyEpdRefresh(void)
+inline void prettyEpdRefresh(void)
 {
   gfx.setEpdMode(epd_mode_t::epd_quality);
   gfx.fillScreen(TFT_WHITE);
@@ -115,9 +106,22 @@ int syncNTPTime(const char *tz, NtpServers... ntps)
   return 0;
 }
 
+inline int syncNTPTimeJP(void)
+{
+  constexpr auto NTP_SERVER1 = "ntp.nict.jp";
+  constexpr auto NTP_SERVER2 = "time.cloudflare.com";
+  constexpr auto NTP_SERVER3 = "time.google.com";
+  constexpr auto TIME_ZONE = "JST-9";
+
+  return syncNTPTime(TIME_ZONE, NTP_SERVER1, NTP_SERVER2, NTP_SERVER3);
+}
+
 uint_fast16_t getCo2Data(void)
 {
   using namespace ArduinoJson;
+  constexpr auto CO2_DATA_URL = "http://192.168.10.105/api/data";
+  constexpr uint16_t HTTP_TIMEOUT = 3000;
+
   if (!WiFi.isConnected())
     return 0;
 
@@ -128,10 +132,9 @@ uint_fast16_t getCo2Data(void)
     Serial.printf("[HTTP] Failed to parse url\n");
     return 0;
   }
+  http.setTimeout(HTTP_TIMEOUT);
 
-  // start connection and send HTTP header
   int httpCode = http.GET();
-  // httpCode will be negative on error
   if (httpCode != HTTP_CODE_OK)
   {
     Serial.printf("[HTTP] GET... failed, error: %s\n",
@@ -139,8 +142,6 @@ uint_fast16_t getCo2Data(void)
     http.end();
     return 0;
   }
-  // String payload = http.getString();
-
   StaticJsonDocument<64> filter;
   filter["co2"]["value"] = true;
 
@@ -153,8 +154,7 @@ uint_fast16_t getCo2Data(void)
     return 0;
   }
 
-  uint_fast16_t co2 = doc["co2"]["value"];
-  return co2;
+  return doc["co2"]["value"];
 }
 
 void handleBtnPPress(void)
@@ -165,7 +165,7 @@ void handleBtnPPress(void)
 
   gfx.startWrite();
   gfx.setCursor(0, 0);
-  if (!syncNTPTime(TIME_ZONE, NTP_SERVER1, NTP_SERVER2, NTP_SERVER3))
+  if (!syncNTPTimeJP())
   {
     gfx.println("Succeeded to sync time");
     struct tm timeInfo;
@@ -197,7 +197,7 @@ void handleBtnPPress(void)
   xSemaphoreGive(xMutex);
 }
 
-void handleBtnRPress(void)
+inline void handleBtnRPress(void)
 {
   xSemaphoreTake(xMutex, portMAX_DELAY);
   prettyEpdRefresh();
@@ -244,6 +244,9 @@ void handleButton(void *pvParameters)
 
 void setup(void)
 {
+  constexpr uint_fast16_t WIFI_CONNECT_RETRY_MAX = 60; // 10 = 5s
+  constexpr uint_fast16_t WAIT_ON_FAILURE = 2000;
+
   M5.begin(false, false, true, true);
   WiFi.begin(WiFiInfo::SSID, WiFiInfo::PASS);
 
@@ -271,7 +274,7 @@ void setup(void)
   else
   {
     gfx.println("Failed to connect to a Wi-Fi network");
-    delay(WAIT_ON_NOTIFY);
+    delay(WAIT_ON_FAILURE);
   }
 
   M5.RTC.begin();
@@ -291,7 +294,6 @@ void setup(void)
   {
     xSemaphoreGive(xMutex);
     xTaskCreatePinnedToCore(handleButton, "handleButton", 4096, nullptr, 1, nullptr, 1);
-    gfx.println("Succeeded to create a task for buttons");
   }
   else
   {
@@ -306,6 +308,9 @@ void setup(void)
 
 void loop(void)
 {
+  constexpr uint_fast16_t SLEEP_SEC = 5;
+  constexpr uint_fast32_t TIME_SYNC_CYCLE = 7 * 3600 * 24 / SLEEP_SEC;
+
   static uint32_t cnt = 0;
 
   xSemaphoreTake(xMutex, portMAX_DELAY);
@@ -379,7 +384,7 @@ void loop(void)
   cnt++;
   if (cnt == TIME_SYNC_CYCLE)
   {
-    syncNTPTime(TIME_ZONE, NTP_SERVER1, NTP_SERVER2, NTP_SERVER3);
+    syncNTPTimeJP();
     cnt = 0;
   }
   xSemaphoreGive(xMutex);
