@@ -162,7 +162,9 @@ uint_fast16_t getCo2Data(void)
 void setLEDColor(uint_fast16_t co2)
 {
   constexpr uint_fast8_t ID_LED_USE = 1;
-  if (co2 < 650)
+  leds[0] = CRGB::Black;
+  leds[2] = CRGB::Black;
+  if (co2 < 600)
   {
     leds[ID_LED_USE] = CRGB::White;
   }
@@ -180,7 +182,9 @@ void setLEDColor(uint_fast16_t co2)
   }
   else
   {
-    leds[ID_LED_USE] = CRGB::Orange;
+    leds[ID_LED_USE] = CRGB::Red;
+    leds[0] = CRGB::Red;
+    leds[2] = CRGB::Red;
   }
   FastLED.show();
 }
@@ -279,7 +283,7 @@ void setup(void)
   WiFi.begin(WiFiInfo::SSID, WiFiInfo::PASS);
 
   FastLED.addLeds<WS2811, 26, GRB>(leds, 3).setCorrection(TypicalSMD5050);
-  FastLED.setBrightness(10);
+  FastLED.setBrightness(5);
 
   gfx.init();
   gfx.setEpdMode(epd_mode_t::epd_fast);
