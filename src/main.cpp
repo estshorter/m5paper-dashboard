@@ -73,10 +73,10 @@ struct conjunction<B1_, Bn...>
 {
 };
 
-template <typename... Ts>
+template <class... Ts>
 using AreAllPtrToConstChar = typename conjunction<std::is_same<Ts, std::add_pointer<const char>::type>...>::type;
 
-template <class... NtpServers, typename std::enable_if<AreAllPtrToConstChar<NtpServers...>::value, std::nullptr_t>::type = nullptr>
+template <class... NtpServers, std::enable_if_t<AreAllPtrToConstChar<NtpServers...>::value, std::nullptr_t> = nullptr>
 int syncNTPTime(const char *tz, NtpServers... ntps)
 {
   static_assert(sizeof...(ntps) <= 3 && sizeof...(ntps) >= 1, "NTP servers must be one at least and three at most");
