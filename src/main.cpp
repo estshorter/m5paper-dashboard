@@ -1,8 +1,7 @@
 #include <M5EPD.h>
 #include <Wire.h>
 #include <WiFi.h>
-#include <HTTPClient.h>
-#include <ArduinoJson.hpp>
+#include <ArduinoOTA.h>
 #include <FastLED.h>
 #include "SHT3X.h"
 #include "WiFiInfo.h"
@@ -10,6 +9,7 @@
 #define LGFX_M5PAPER
 #include <LovyanGFX.hpp>
 #include "myFont.h"
+#include "misc.h"
 
 constexpr float FONT_SIZE_LARGE = 3.0;
 constexpr float FONT_SIZE_SMALL = 1.0;
@@ -25,174 +25,26 @@ SHT3X::SHT3X sht30(wire_portA);
 LGFX gfx;
 CRGB leds[3];
 
-inline String WiFiConnectedToString()
-{
-  return WiFi.isConnected() ? String("OK") : String("NG");
-}
-
-inline void prettyEpdRefresh(void)
-{
-  gfx.setEpdMode(epd_mode_t::epd_quality);
-  gfx.fillScreen(TFT_WHITE);
-  gfx.setEpdMode(epd_mode_t::epd_fast);
-}
-
-String weekdayToString(const int8_t weekDay)
-{
-  switch (weekDay)
-  {
-  case 0:
-    return String("日");
-  case 1:
-    return String("月");
-  case 2:
-    return String("火");
-  case 3:
-    return String("水");
-  case 4:
-    return String("木");
-  case 5:
-    return String("金");
-  case 6:
-    return String("土");
-  }
-  return String("");
-}
-
-template <class...>
-struct conjunction : std::true_type
-{
-};
-template <class B1_>
-struct conjunction<B1_> : B1_
-{
-};
-template <class B1_, class... Bn>
-struct conjunction<B1_, Bn...>
-    : std::conditional<bool(B1_::value), conjunction<Bn...>, B1_>::type
-{
-};
-
-template <class... Ts>
-using AreAllPtrToConstChar = typename conjunction<std::is_same<Ts, std::add_pointer<const char>::type>...>::type;
-
-template <class... NtpServers, std::enable_if_t<AreAllPtrToConstChar<NtpServers...>::value, std::nullptr_t> = nullptr>
-int syncNTPTime(const char *tz, NtpServers... ntps)
-{
-  static_assert(sizeof...(ntps) <= 3 && sizeof...(ntps) >= 1, "NTP servers must be one at least and three at most");
-  if (!WiFi.isConnected())
-  {
-    return 1;
-  }
-
-  configTzTime(tz, std::forward<NtpServers>(ntps)...);
-
-  struct tm datetime;
-  if (!getLocalTime(&datetime))
-    return 1;
-
-  rtc_time_t time{
-      static_cast<int8_t>(datetime.tm_hour),
-      static_cast<int8_t>(datetime.tm_min),
-      static_cast<int8_t>(datetime.tm_sec)};
-  rtc_date_t date{
-      static_cast<int8_t>(datetime.tm_wday),
-      static_cast<int8_t>(datetime.tm_mon + 1),
-      static_cast<int8_t>(datetime.tm_mday),
-      static_cast<int16_t>(datetime.tm_year + 1900)};
-
-  M5.RTC.setTime(&time);
-  M5.RTC.setDate(&date);
-  date_ntp = date;
-  time_ntp = time;
-  return 0;
-}
-
 inline int syncNTPTimeJP(void)
 {
   constexpr auto NTP_SERVER1 = "ntp.nict.jp";
   constexpr auto NTP_SERVER2 = "time.cloudflare.com";
   constexpr auto NTP_SERVER3 = "time.google.com";
   constexpr auto TIME_ZONE = "JST-9";
+  auto datetime_setter = [](rtc_date_t *date, rtc_time_t *time) {
+    M5.RTC.setTime(time);
+    M5.RTC.setDate(date);
+    date_ntp = *date;
+    time_ntp = *time;
+  };
 
-  return syncNTPTime(TIME_ZONE, NTP_SERVER1, NTP_SERVER2, NTP_SERVER3);
-}
-
-uint_fast16_t getCo2Data(void)
-{
-  using namespace ArduinoJson;
-  constexpr auto CO2_DATA_URL = "http://192.168.10.105/api/data";
-  constexpr uint16_t HTTP_TIMEOUT = 3000;
-
-  if (!WiFi.isConnected())
-    return 0;
-
-  WiFiClient client;
-  HTTPClient http;
-  if (!http.begin(client, CO2_DATA_URL))
-  {
-    Serial.printf("[HTTP] Failed to parse url\n");
-    return 0;
-  }
-  http.setTimeout(HTTP_TIMEOUT);
-
-  int httpCode = http.GET();
-  if (httpCode != HTTP_CODE_OK)
-  {
-    Serial.printf("[HTTP] GET... failed, error: %s\n",
-                  http.errorToString(httpCode).c_str());
-    http.end();
-    return 0;
-  }
-  StaticJsonDocument<64> filter;
-  filter["co2"]["value"] = true;
-
-  StaticJsonDocument<64> doc;
-  auto err = deserializeJson(doc, client, DeserializationOption::Filter(filter));
-  http.end();
-  if (err)
-  {
-    Serial.printf("[JSON] DeserializationError, error: %s\n", err.c_str());
-    return 0;
-  }
-
-  return doc["co2"]["value"];
-}
-
-void setLEDColor(uint_fast16_t co2)
-{
-  constexpr uint_fast8_t ID_LED_USE = 1;
-  leds[0] = CRGB::Black;
-  leds[2] = CRGB::Black;
-  if (co2 < 600)
-  {
-    leds[ID_LED_USE] = CRGB::White;
-  }
-  else if (co2 < 1200)
-  {
-    leds[ID_LED_USE] = CRGB::Green;
-  }
-  else if (co2 < 1500)
-  {
-    leds[ID_LED_USE] = CRGB::Yellow;
-  }
-  else if (co2 < 2000)
-  {
-    leds[ID_LED_USE] = CRGB::Red;
-  }
-  else
-  {
-    leds[ID_LED_USE] = CRGB::Red;
-    leds[0] = CRGB::Red;
-    leds[2] = CRGB::Red;
-  }
-  FastLED.show();
+  return syncNTPTime(TIME_ZONE, datetime_setter, NTP_SERVER1, NTP_SERVER2, NTP_SERVER3);
 }
 
 void handleBtnPPress(void)
 {
   xSemaphoreTake(xMutex, portMAX_DELAY);
-  prettyEpdRefresh();
+  prettyEpdRefresh(gfx);
   gfx.setTextSize(FONT_SIZE_SMALL);
 
   gfx.startWrite();
@@ -232,14 +84,14 @@ void handleBtnPPress(void)
 inline void handleBtnRPress(void)
 {
   xSemaphoreTake(xMutex, portMAX_DELAY);
-  prettyEpdRefresh();
+  prettyEpdRefresh(gfx);
   xSemaphoreGive(xMutex);
 }
 
 void handleBtnLLongPress(void)
 {
   xSemaphoreTake(xMutex, portMAX_DELAY);
-  prettyEpdRefresh();
+  prettyEpdRefresh(gfx);
   gfx.setCursor(0, 0);
   gfx.setTextSize(FONT_SIZE_SMALL);
   gfx.print("Good bye..");
@@ -312,6 +164,39 @@ void setup(void)
     delay(WAIT_ON_FAILURE);
   }
 
+  ArduinoOTA
+      .onStart([]() {
+        String type;
+        if (ArduinoOTA.getCommand() == U_FLASH)
+          type = "sketch";
+        else // U_SPIFFS
+          type = "filesystem";
+
+        // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
+        Serial.println("Start updating " + type);
+      })
+      .onEnd([]() {
+        Serial.println("\nEnd");
+      })
+      .onProgress([](unsigned int progress, unsigned int total) {
+        Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+      })
+      .onError([](ota_error_t error) {
+        Serial.printf("Error[%u]: ", error);
+        if (error == OTA_AUTH_ERROR)
+          Serial.println("Auth Failed");
+        else if (error == OTA_BEGIN_ERROR)
+          Serial.println("Begin Failed");
+        else if (error == OTA_CONNECT_ERROR)
+          Serial.println("Connect Failed");
+        else if (error == OTA_RECEIVE_ERROR)
+          Serial.println("Receive Failed");
+        else if (error == OTA_END_ERROR)
+          Serial.println("End Failed");
+      });
+
+  ArduinoOTA.begin();
+
   M5.RTC.begin();
 
   // env2 unit
@@ -337,7 +222,7 @@ void setup(void)
   gfx.println("Init done");
   delay(1000);
   gfx.setTextSize(FONT_SIZE_LARGE);
-  prettyEpdRefresh();
+  prettyEpdRefresh(gfx);
   gfx.setCursor(0, 0);
 }
 
@@ -349,6 +234,8 @@ void loop(void)
   static uint32_t cnt = 0;
 
   xSemaphoreTake(xMutex, portMAX_DELAY);
+  ArduinoOTA.handle();
+
   float tmp = 0.0;
   uint_fast8_t hum = 0;
 
@@ -358,7 +245,7 @@ void loop(void)
     hum = sht30.getHumidity();
   }
   auto co2 = getCo2Data();
-  setLEDColor(co2);
+  setLEDColor(leds, co2);
 
   rtc_date_t date;
   rtc_time_t time;
