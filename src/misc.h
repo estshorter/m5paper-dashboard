@@ -130,7 +130,7 @@ inline void prettyEpdRefresh(LGFX &gfx)
 }
 
 template <class... NtpServers, std::enable_if_t<AreAllPtrToConstChar<NtpServers...>::value, std::nullptr_t> = nullptr>
-int syncNTPTime(const char *tz, std::function<void(rtc_date_t *, rtc_time_t *)> datetimeSetter, NtpServers... ntps)
+int syncNTPTime(const char *tz, std::function<void(const rtc_date_t *, const rtc_time_t *)> datetimeSetter, NtpServers... ntps)
 {
     static_assert(sizeof...(ntps) <= 3 && sizeof...(ntps) >= 1, "NTP servers must be one at least and three at most");
     if (!WiFi.isConnected())

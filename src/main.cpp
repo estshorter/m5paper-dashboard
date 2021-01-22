@@ -2,6 +2,7 @@
 #include <Wire.h>
 #include <WiFi.h>
 #include <ArduinoOTA.h>
+#define FASTLED_INTERNAL //suppress pragma message
 #include <FastLED.h>
 #include "SHT3X.h"
 #include "WiFiInfo.h"
@@ -31,7 +32,7 @@ inline int syncNTPTimeJP(void)
   constexpr auto NTP_SERVER2 = "time.cloudflare.com";
   constexpr auto NTP_SERVER3 = "time.google.com";
   constexpr auto TIME_ZONE = "JST-9";
-  auto datetime_setter = [](rtc_date_t *date, rtc_time_t *time) {
+  auto datetime_setter = [](const rtc_date_t *date, const rtc_time_t *time) {
     M5.RTC.setTime(time);
     M5.RTC.setDate(date);
     date_ntp = *date;
