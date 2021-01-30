@@ -62,6 +62,8 @@ void handleBtnPPress(void)
     gfx.println("Failed to sync time");
   }
 
+  // 日時の取得結果が変になることがあったので念のためdelayをいれておく
+  delay(100);
   rtc_date_t date;
   rtc_time_t time;
 
@@ -72,7 +74,7 @@ void handleBtnPPress(void)
   gfx.printf("%02d:%02d:%02d", time.hour, time.min, time.sec);
   gfx.endWrite();
 
-  delay(1000);
+  delay(900);
 
   gfx.setTextSize(FONT_SIZE_LARGE);
   xSemaphoreGive(xMutex);
