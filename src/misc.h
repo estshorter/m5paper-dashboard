@@ -4,7 +4,6 @@
 #include <ArduinoJson.hpp>
 #include <FastLED.h>
 
-#define LGFX_AUTODETECT
 #include <LovyanGFX.hpp>
 
 inline String WiFiConnectedToString()
