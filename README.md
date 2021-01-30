@@ -8,6 +8,6 @@
 Set your Wi-Fi parameters in `src/WiFiInfo.h`
 
 ## Buttons
-- BtnL: Shutdown (long press)
+- BtnL: Shutdown
 - BtnR: Refresh e-paper
 - BtnP: Time Synchronization with a NTP server

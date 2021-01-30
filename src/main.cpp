@@ -110,15 +110,15 @@ void handleButton(void *pvParameters)
   {
     delay(500);
     M5.update();
-    if (M5.BtnP.wasPressed())
+    if (M5.BtnP.isPressed())
     {
       handleBtnPPress();
     }
-    else if (M5.BtnR.wasPressed())
+    else if (M5.BtnR.isPressed())
     {
       handleBtnRPress();
     }
-    else if (M5.BtnL.pressedFor(2000))
+    else if (M5.BtnL.isPressed())
     {
       handleBtnLLongPress();
     }
