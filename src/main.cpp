@@ -1,6 +1,4 @@
 #include <M5EPD.h>
-#include <Wire.h>
-#include <WiFi.h>
 #include <ArduinoOTA.h>
 #define FASTLED_INTERNAL //suppress pragma message
 #include <FastLED.h>
