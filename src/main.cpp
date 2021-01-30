@@ -132,7 +132,7 @@ void setup(void)
   constexpr uint_fast16_t WIFI_CONNECT_RETRY_MAX = 60; // 10 = 5s
   constexpr uint_fast16_t WAIT_ON_FAILURE = 2000;
 
-  M5.begin(false, false, true, true);
+  M5.begin(false, false, true, true, true, true);
   WiFi.begin(WiFiInfo::SSID, WiFiInfo::PASS);
 
   FastLED.addLeds<WS2811, 26, GRB>(leds, 3).setCorrection(TypicalSMD5050);
@@ -197,8 +197,6 @@ void setup(void)
       });
 
   ArduinoOTA.begin();
-
-  M5.RTC.begin();
 
   // env2 unit
   if (wire_portA->begin(25, 32))
