@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 namespace SHT3X
 {
-  SHT3X::SHT3X(TwoWire *theWire, const uint8_t address) : _wire(theWire), _address(address)
+  SHT3X::SHT3X(TwoWire &theWire, const uint8_t address) : _wire(theWire), _address(address)
   {
   }
   int SHT3X::read()
@@ -38,22 +38,22 @@ namespace SHT3X
     constexpr uint8_t COMMAND_MEASURE[2] = {0x2C, 0x06};
 
     // Start I2C Transmission
-    _wire->beginTransmission(_address);
+    _wire.beginTransmission(_address);
     // Send measurement command
-    _wire->write(COMMAND_MEASURE, 2);
+    _wire.write(COMMAND_MEASURE, 2);
     // Stop I2C transmission
-    if (_wire->endTransmission() != 0)
+    if (_wire.endTransmission() != 0)
       return 1;
 
     delay(20);
 
     // Request 6 bytes of data
-    _wire->requestFrom(_address, static_cast<size_t>(6));
+    _wire.requestFrom(_address, static_cast<size_t>(6));
 
     // Read 6 bytes of data
     // cTemp msb, cTemp lsb, cTemp crc, humidity msb, humidity lsb, humidity crc
     for (int i = 0; i < 6; i++)
-      data[i] = _wire->read();
+      data[i] = _wire.read();
 
     if (data[2] != crc8(data, 2) || data[5] != crc8(data + 3, 2))
       return 1;

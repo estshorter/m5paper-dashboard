@@ -18,7 +18,7 @@ constexpr uint_fast16_t M5PAPER_SIZE_SHORT_SIDE = 540;
 rtc_time_t time_ntp;
 rtc_date_t date_ntp{4, 1, 1, 1970};
 
-TwoWire *wire_portA = &Wire1;
+TwoWire &wire_portA = Wire1;
 SemaphoreHandle_t xMutex = nullptr;
 SHT3X::SHT3X sht30(wire_portA);
 LGFX gfx;
@@ -30,11 +30,10 @@ inline int syncNTPTimeJP(void)
   constexpr auto NTP_SERVER2 = "time.cloudflare.com";
   constexpr auto NTP_SERVER3 = "time.google.com";
   constexpr auto TIME_ZONE = "JST-9";
-  auto datetime_setter = [](const rtc_date_t *date, const rtc_time_t *time) {
-    M5.RTC.setTime(time);
-    M5.RTC.setDate(date);
-    date_ntp = *date;
-    time_ntp = *time;
+  auto datetime_setter = [](const rtc_date_t &date, const rtc_time_t &time) {
+    M5.RTC.setDateTime(date, time);
+    date_ntp = date;
+    time_ntp = time;
   };
 
   return syncNTPTime(TIME_ZONE, datetime_setter, NTP_SERVER1, NTP_SERVER2, NTP_SERVER3);
@@ -67,8 +66,7 @@ void handleBtnPPress(void)
   rtc_time_t time;
 
   // Get RTC
-  M5.RTC.getDate(&date);
-  M5.RTC.getTime(&time);
+  M5.RTC.getDateTime(date, time);
   gfx.print("RTC         :");
   gfx.printf("%04d/%02d/%02d ", date.year, date.mon, date.day);
   gfx.printf("%02d:%02d:%02d", time.hour, time.min, time.sec);
@@ -197,7 +195,7 @@ void setup(void)
   ArduinoOTA.begin();
 
   // env2 unit
-  if (wire_portA->begin(25, 32))
+  if (wire_portA.begin(25, 32))
   {
     sht30.begin();
   }
@@ -247,8 +245,7 @@ void loop(void)
   rtc_date_t date;
   rtc_time_t time;
 
-  M5.RTC.getDate(&date);
-  M5.RTC.getTime(&time);
+  M5.RTC.getDateTime(date, time);
 
   gfx.startWrite();
   gfx.fillScreen(TFT_WHITE);
