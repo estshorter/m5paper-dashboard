@@ -37,7 +37,7 @@ namespace SHT3X
   class SHT3X
   {
   public:
-    SHT3X(TwoWire &theWire = Wire, const uint8_t address = 0x44) : _wire(theWire), _address(address) {}
+    SHT3X(TwoWire &wire = Wire, const uint8_t address = 0x44) : _wire(wire), _address(address) {}
 
     int read(void);
     void begin(void)
