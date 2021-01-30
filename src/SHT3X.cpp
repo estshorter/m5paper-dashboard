@@ -29,9 +29,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 namespace SHT3X
 {
-  SHT3X::SHT3X(TwoWire &theWire, const uint8_t address) : _wire(theWire), _address(address)
-  {
-  }
   int SHT3X::read()
   {
     uint8_t data[6];
