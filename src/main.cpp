@@ -47,7 +47,7 @@ inline int syncNTPTimeJP(void)
     time_ntp = time;
   };
 
-  return syncNTPTime(TIME_ZONE, datetime_setter, NTP_SERVER1, NTP_SERVER2, NTP_SERVER3);
+  return syncNTPTime(datetime_setter, TIME_ZONE, NTP_SERVER1, NTP_SERVER2, NTP_SERVER3);
 }
 
 void handleBtnPPress(void)

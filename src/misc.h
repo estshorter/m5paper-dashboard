@@ -112,7 +112,7 @@ inline void prettyEpdRefresh(LGFX &gfx)
     gfx.setEpdMode(epd_mode_t::epd_fast);
 }
 
-int syncNTPTime(const char *tz, std::function<void(const tm &)> datetimeSetter,
+int syncNTPTime(std::function<void(const tm &)> datetimeSetter, const char *tz,
                 const char *server1, const char *server2 = nullptr, const char *server3 = nullptr)
 {
     if (!WiFi.isConnected())
