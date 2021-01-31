@@ -30,7 +30,18 @@ inline int syncNTPTimeJP(void)
   constexpr auto NTP_SERVER2 = "time.cloudflare.com";
   constexpr auto NTP_SERVER3 = "time.google.com";
   constexpr auto TIME_ZONE = "JST-9";
-  auto datetime_setter = [](const rtc_date_t &date, const rtc_time_t &time) {
+
+  auto datetime_setter = [](const tm &datetime) {
+    rtc_time_t time{
+        static_cast<int8_t>(datetime.tm_hour),
+        static_cast<int8_t>(datetime.tm_min),
+        static_cast<int8_t>(datetime.tm_sec)};
+    rtc_date_t date{
+        static_cast<int8_t>(datetime.tm_wday),
+        static_cast<int8_t>(datetime.tm_mon + 1),
+        static_cast<int8_t>(datetime.tm_mday),
+        static_cast<int16_t>(datetime.tm_year + 1900)};
+
     M5.RTC.setDateTime(date, time);
     date_ntp = date;
     time_ntp = time;

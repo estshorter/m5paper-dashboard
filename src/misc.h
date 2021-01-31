@@ -34,23 +34,6 @@ String weekdayToString(const int8_t weekDay)
     return String("");
 }
 
-template <class...>
-struct conjunction : std::true_type
-{
-};
-template <class B1_>
-struct conjunction<B1_> : B1_
-{
-};
-template <class B1_, class... Bn>
-struct conjunction<B1_, Bn...>
-    : std::conditional<bool(B1_::value), conjunction<Bn...>, B1_>::type
-{
-};
-
-template <class... Ts>
-using AreAllPtrToConstChar = typename conjunction<std::is_same<Ts, std::add_pointer<const char>::type>...>::type;
-
 uint_fast16_t getCo2Data(void)
 {
     using namespace ArduinoJson;
@@ -129,32 +112,21 @@ inline void prettyEpdRefresh(LGFX &gfx)
     gfx.setEpdMode(epd_mode_t::epd_fast);
 }
 
-template <class... NtpServers, std::enable_if_t<AreAllPtrToConstChar<NtpServers...>::value, std::nullptr_t> = nullptr>
-int syncNTPTime(const char *tz, std::function<void(const rtc_date_t &, const rtc_time_t &)> datetimeSetter, NtpServers... ntps)
+int syncNTPTime(const char *tz, std::function<void(const tm &)> datetimeSetter,
+                const char *server1, const char *server2 = nullptr, const char *server3 = nullptr)
 {
-    static_assert(sizeof...(ntps) <= 3 && sizeof...(ntps) >= 1, "NTP servers must be one at least and three at most");
     if (!WiFi.isConnected())
     {
         return 1;
     }
 
-    configTzTime(tz, std::forward<NtpServers>(ntps)...);
+    configTzTime(tz, server1, server2, server3);
 
     struct tm datetime;
     if (!getLocalTime(&datetime))
         return 1;
 
-    rtc_time_t time{
-        static_cast<int8_t>(datetime.tm_hour),
-        static_cast<int8_t>(datetime.tm_min),
-        static_cast<int8_t>(datetime.tm_sec)};
-    rtc_date_t date{
-        static_cast<int8_t>(datetime.tm_wday),
-        static_cast<int8_t>(datetime.tm_mon + 1),
-        static_cast<int8_t>(datetime.tm_mday),
-        static_cast<int16_t>(datetime.tm_year + 1900)};
-
-    datetimeSetter(date, time);
+    datetimeSetter(datetime);
 
     return 0;
 }
