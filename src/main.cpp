@@ -197,11 +197,7 @@ void setup(void)
   ArduinoOTA.begin();
 
   // env2 unit
-  if (wire_portA.begin(25, 32))
-  {
-    sht30.begin();
-  }
-  else
+  if (!wire_portA.begin(25, 32))
   {
     gfx.println("Failed to initialize external I2C");
   }

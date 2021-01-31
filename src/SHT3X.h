@@ -9,13 +9,15 @@ namespace SHT3X
   class SHT3X
   {
   public:
-    SHT3X(TwoWire &wire = Wire, const uint8_t address = 0x44) : _wire(wire), _address(address) {}
+    SHT3X(TwoWire &wire = Wire) : _wire(wire) {}
 
     int read(void);
-    void begin(void)
-    {
-      _wire.begin();
-    };
+
+    // assume _wire.begin() is already called
+    // void begin(void)
+    // {
+    //   _wire.begin();
+    // };
 
     float getTemperature(void) const
     {
@@ -29,9 +31,9 @@ namespace SHT3X
 
   private:
     TwoWire &_wire;
-    uint8_t _address;
     float _cTemp = 0;
     uint_fast8_t _humidity = 0;
+    static constexpr int Addr = 0x44;
 
     static uint8_t crc8(const uint8_t *data, const int len);
   };

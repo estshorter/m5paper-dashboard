@@ -35,7 +35,7 @@ namespace SHT3X
     constexpr uint8_t COMMAND_MEASURE[2] = {0x2C, 0x06};
 
     // Start I2C Transmission
-    _wire.beginTransmission(_address);
+    _wire.beginTransmission(Addr);
     // Send measurement command
     _wire.write(COMMAND_MEASURE, 2);
     // Stop I2C transmission
@@ -45,7 +45,7 @@ namespace SHT3X
     delay(20);
 
     // Request 6 bytes of data
-    _wire.requestFrom(_address, static_cast<size_t>(6));
+    _wire.requestFrom(Addr, static_cast<size_t>(6));
 
     // Read 6 bytes of data
     // cTemp msb, cTemp lsb, cTemp crc, humidity msb, humidity lsb, humidity crc
