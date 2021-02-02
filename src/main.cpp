@@ -96,7 +96,7 @@ inline void handleBtnRPress(void)
   xSemaphoreGive(xMutex);
 }
 
-void handleBtnLLongPress(void)
+void handleBtnLPress(void)
 {
   xSemaphoreTake(xMutex, portMAX_DELAY);
   prettyEpdRefresh(gfx);
@@ -129,7 +129,7 @@ void handleButton(void *pvParameters)
     }
     else if (M5.BtnL.isPressed())
     {
-      handleBtnLLongPress();
+      handleBtnLPress();
     }
   }
 }
