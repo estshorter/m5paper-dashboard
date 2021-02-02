@@ -73,7 +73,6 @@ void handleBtnPPress(void)
     gfx.println("Failed to sync time");
   }
 
-  // 日時の取得結果が変になることがあったので、念のためdelayをいれておく
   rtc_date_t date;
   rtc_time_t time;
 
