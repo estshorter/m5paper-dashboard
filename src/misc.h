@@ -7,7 +7,7 @@
 
 #include <LovyanGFX.hpp>
 
-inline String WiFiConnectedToString()
+inline String WiFiConnectedToString(void)
 {
     return WiFi.isConnected() ? String("OK") : String("NG");
 }
