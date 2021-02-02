@@ -122,6 +122,14 @@ int syncNTPTime(std::function<void(const tm &)> datetimeSetter, const char *tz,
 
     configTzTime(tz, server1, server2, server3);
 
+    // https://github.com/espressif/esp-idf/blob/master/examples/protocols/sntp/main/sntp_example_main.c
+    int retry = 0;
+    constexpr int retry_count = 50;
+    while (sntp_get_sync_status() == SNTP_SYNC_STATUS_RESET && ++retry < retry_count)
+    {
+        delay(100);
+    }
+
     struct tm datetime;
     if (!getLocalTime(&datetime))
         return 1;
