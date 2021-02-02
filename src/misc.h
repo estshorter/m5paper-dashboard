@@ -129,6 +129,10 @@ int syncNTPTime(std::function<void(const tm &)> datetimeSetter, const char *tz,
     {
         delay(100);
     }
+    if (retry == retry_count)
+    {
+        return 1;
+    }
 
     struct tm datetime;
     if (!getLocalTime(&datetime))
