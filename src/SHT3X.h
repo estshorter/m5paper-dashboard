@@ -13,11 +13,10 @@ namespace SHT3X
 
     int read(void);
 
-    // assume _wire.begin() is already called
-    // void begin(void)
-    // {
-    //   _wire.begin();
-    // };
+    bool begin(int sda = -1, int scl = -1, uint32_t frequency = 0) // returns true, if successful init of i2c bus
+    {
+      return _wire.begin(sda, scl, frequency);
+    };
 
     float getTemperature(void) const
     {
