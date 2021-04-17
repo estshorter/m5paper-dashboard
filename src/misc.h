@@ -4,6 +4,7 @@
 #include <HTTPClient.h>
 #include <ArduinoJson.hpp>
 #include <FastLED.h>
+#include "esp_sntp.h"
 
 #include <LovyanGFX.hpp>
 
