@@ -1,0 +1,6 @@
+BasedOnStyle:  Google
+IndentWidth:   4
+Language:        Cpp
+UseTab: Always 
+TabWidth: 4
+ColumnLimit: 100
